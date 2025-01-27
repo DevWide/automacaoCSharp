@@ -1,0 +1,26 @@
+{
+    "VehicleDataPage": {
+        "MakeDropdown": "#make",
+        "ModelDropdown": "#model",
+        "NumberOfSeatsDropdown": "#numberofseats",
+        "RightHandDriveYesRadioButton": "#righthanddriveyes",
+        "FuelTypeDropdown": "#fuel",
+        "CylinderCapacityInput": "#cylindercapacity",
+        "EnginePerformanceInput": "#engineperformance",
+        "DateOfManufactureInput": "#dateofmanufacture",
+        "PayloadInput": "#payload",
+        "TotalWeightInput": "#totalweight",
+        "ListPriceInput": "#listprice",
+        "LicensePlateNumberInput": "#licenseplatenumber",
+        "AnnualMileageInput": "#annualmileage",
+        "NextButton": "#nextenterinsurantdata"
+    },
+    "InsurantDataPage": {
+        "EnterInsurantDataMenu": "#enterinsurantdata",
+        "FirstNameInput": "#firstname",
+        "LastNameInput": "#lastname",
+        "DateOfBirthInput": "#birthdate",
+        "StreetAddressInput": "#streetaddress",
+        "CountryDropdown": "#country"
+    }
+}

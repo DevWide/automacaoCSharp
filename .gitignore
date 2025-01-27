@@ -1,0 +1,29 @@
+# Capturas de Tela
+Screenshots/
+
+# Build Artifacts
+bin/
+obj/
+
+# Logs
+*.log
+*.tmp
+
+# Configurações Locais de IDE
+.vscode/
+*.user
+*.suo
+*.csproj.user
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Backup Files
+*~
+
+# Restore Packages
+packages/
