@@ -21,25 +21,29 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '9.0.x' 
+        dotnet-version: '9.0.x' # Substitua pela versão do .NET que está usando
 
-    # 3. Restaurar dependências do projeto
+    # 3. Configurar a fonte do NuGet
+    - name: Setup NuGet source
+      run: dotnet nuget add source --name nuget.org https://api.nuget.org/v3/index.json
+
+    # 4. Restaurar dependências do projeto
     - name: Restore dependencies
       run: dotnet restore
 
-    # 4. Instalar navegadores do Playwright (específico para projetos .NET)
-    - name: Install Playwright browsers using .NET CLI
-      run: |
-        dotnet tool install --global Microsoft.Playwright.CLI --version 1.49.0
-        dotnet playwright install
-      env:
-        PLAYWRIGHT_BROWSERS_PATH: 0  # Isso assegura que os navegadores sejam instalados no diretório padrão do pipeline
+    # 5. Instalar Playwright CLI
+    - name: Install Playwright CLI
+      run: dotnet tool install --global Microsoft.Playwright.CLI
 
-    # 5. Executar os testes
+    # 6. Instalar navegadores do Playwright
+    - name: Install Playwright browsers
+      run: dotnet playwright install
+
+    # 7. Executar os testes
     - name: Run Playwright tests
       run: dotnet test --filter "(Category=VehicleData) | (Category=InsurantData)"
 
-    # 6. (Opcional) Capturar relatórios de testes
+    # 8. (Opcional) Capturar relatórios de testes
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@v3
@@ -47,8 +51,6 @@ jobs:
         name: test-results
         path: '**/TestResults/*.trx'
 
-    # 7. Configuração do ambiente
+    # 9. Configurar ambiente CI
     - name: Setup environment
       run: echo "CI=true" >> $GITHUB_ENV
-
-
