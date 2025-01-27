@@ -10,10 +10,10 @@ namespace PlaywrightTest.Tests
         [Fact, Trait("Category", "VehicleData")]
         public async Task TestVehicleDataForm()
         {
-            // Abrir a URL inicial
+            // Abre a URL inicial
             await Page.GotoAsync(Config.BaseUrl);
 
-            // Preencher a aba Enter Vehicle Data
+            // Realizar o preenchimento da aba no frontend - Enter Vehicle Data
             var vehicleDataPage = new VehicleDataPage(Page);
             await vehicleDataPage.SelectMake("Audi");
             await vehicleDataPage.SelectModel("Scooter");
@@ -32,7 +32,7 @@ namespace PlaywrightTest.Tests
             // Captura de tela 
             await CaptureScreenshot("VehicleDataTest.png");
 
-            // Clicar em Next
+            // Clicar no botão - Next
             await vehicleDataPage.ClickNext();
 
             // Validação que a próxima página foi carregada

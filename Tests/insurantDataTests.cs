@@ -14,7 +14,7 @@ namespace PlaywrightTest.Tests
             // Navegar para a URL base
             await Page.GotoAsync(Config.BaseUrl);
 
-            // Clicar no menu "Enter Insurant Data"
+            // Clicar no menu do frontend - "Enter Insurant Data"
             var insurantDataPage = new InsurantDataPage(Page);
             await insurantDataPage.ClickEnterInsurantDataMenu();
 

@@ -15,9 +15,15 @@ namespace PlaywrightTest.Tests
 
         public async Task InitializeAsync()
         {
+            // Detecta se estamos no ambiente CI para configurar o modo headless
+            bool isCI = Environment.GetEnvironmentVariable("CI") == "true";
+
             // Inicializa o Playwright, o navegador e a página
             Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
-            Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = false });
+            Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            {
+                Headless = isCI // Modo headless apenas em pipelines
+            });
             Context = await Browser.NewContextAsync();
             Page = await Context.NewPageAsync();
         }
@@ -65,7 +71,5 @@ namespace PlaywrightTest.Tests
                 Console.WriteLine("Captura de tela ignorada na pipeline (CI=true).");
             }
         }
-
     }
 }
-
