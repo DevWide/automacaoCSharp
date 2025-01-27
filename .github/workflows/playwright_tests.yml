@@ -21,15 +21,15 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '9.0.x' # Substitua pela versão do .NET que está usando
+        dotnet-version: '9.0.x' 
 
     # 3. Restaurar dependências do projeto
     - name: Restore dependencies
       run: dotnet restore
 
-    # 4. Instalar navegadores do Playwright
-    - name: Install Playwright browsers
-      run: npx playwright install
+    # 4. Instalar navegadores do Playwright (específico para projetos .NET)
+    - name: Install Playwright browsers for .NET
+      run: dotnet playwright install
 
     # 5. Executar os testes
     - name: Run Playwright tests
@@ -43,7 +43,8 @@ jobs:
         name: test-results
         path: '**/TestResults/*.trx'
 
-    # 7. NÃO capturar tela
+    # 7. Configuração do ambiente
     - name: Setup environment
       run: echo "CI=true" >> $GITHUB_ENV
+
 
