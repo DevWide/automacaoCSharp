@@ -38,11 +38,13 @@ jobs:
 
     # 5. Instalar Playwright CLI
     - name: Install Playwright CLI
-      run: dotnet tool install --global Microsoft.Playwright.CLI
+      run: |
+        dotnet tool install --global Microsoft.Playwright.CLI
+        echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
     # 6. Instalar navegadores do Playwright
     - name: Install Playwright browsers
-      run: dotnet playwright install
+      run: playwright install
 
     # 7. Executar os testes
     - name: Run Playwright tests
