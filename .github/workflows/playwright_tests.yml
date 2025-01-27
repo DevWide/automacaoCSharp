@@ -28,8 +28,10 @@ jobs:
       run: dotnet restore
 
     # 4. Instalar navegadores do Playwright (específico para projetos .NET)
-    - name: Install Playwright browsers for .NET
-      run: dotnet playwright install
+    - name: Install Playwright browsers using .NET CLI
+      run: |
+        dotnet tool install --global Microsoft.Playwright.CLI --version 1.49.0
+        dotnet playwright install
 
     # 5. Executar os testes
     - name: Run Playwright tests
