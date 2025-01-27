@@ -32,6 +32,8 @@ jobs:
       run: |
         dotnet tool install --global Microsoft.Playwright.CLI --version 1.49.0
         dotnet playwright install
+      env:
+        PLAYWRIGHT_BROWSERS_PATH: 0  # Isso assegura que os navegadores sejam instalados no diretório padrão do pipeline
 
     # 5. Executar os testes
     - name: Run Playwright tests
