@@ -42,10 +42,15 @@ jobs:
         dotnet tool install --global Microsoft.Playwright.CLI
         echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-    # 6. Instalar navegadores do Playwright
+    # 6. Build do projeto para gerar dependências
+    - name: Build project
+      run: dotnet build
+
+    # 7. Instalar navegadores do Playwright
     - name: Install Playwright browsers
       run: playwright install
 
-    # 7. Executar os testes
+    # 8. Executar os testes
     - name: Run Playwright tests
       run: dotnet test --filter "(Category=VehicleData) | (Category=InsurantData)"
+
