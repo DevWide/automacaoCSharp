@@ -23,15 +23,25 @@ jobs:
       with:
         dotnet-version: '9.0.x' # Substitua pela versão do .NET que está usando
 
-    # 3. Restaurar dependências do projeto
+    # 3. Configurar Node.js (necessário para o Playwright)
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18' # Recomendado para Playwright
+
+    # 4. Restaurar dependências do projeto
     - name: Restore dependencies
       run: dotnet restore
 
-    # 4. Executar os testes
+    # 5. Instalar navegadores do Playwright
+    - name: Install Playwright Browsers
+      run: npx playwright install
+
+    # 6. Executar os testes
     - name: Run Playwright tests
       run: dotnet test --filter "(Category=VehicleData) | (Category=InsurantData)"
 
-    # 5. (Opcional) Capturar relatórios de testes
+    # 7. (Opcional) Capturar relatórios de testes
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@v3
@@ -39,6 +49,6 @@ jobs:
         name: test-results
         path: '**/TestResults/*.trx'
 
-    # 6. NÃO capturar tela
+    # 8. Configurar o ambiente para não capturar tela na pipeline
     - name: Setup environment
       run: echo "CI=true" >> $GITHUB_ENV
