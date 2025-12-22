@@ -1,111 +1,112 @@
-# PlaywrightTest - Automação de Testes para Aplicação de Seguro de Veículos
+# PlaywrightTest – Test Automation for Vehicle Insurance Application
 
-Este projeto implementa uma automação de testes usando **Microsoft Playwright** para validar diferentes etapas de uma aplicação de seguro de veículos. Ele foi projetado para rodar localmente e integrado com **GitHub Actions** para pipelines CI/CD.
+This project implements test automation using Microsoft Playwright to validate different stages of a vehicle insurance application. It is designed to run locally and is integrated with GitHub Actions for CI/CD pipelines.
 
 ---
 
-## Objetivo
-Garantir a qualidade da aplicação de seguro, validando as funcionalidades das abas:
+## Objective
+Ensure the quality of the insurance application by validating the functionalities of the following tabs:
 - **Enter Vehicle Data**
 - **Enter Insurant Data**
 
-Os testes incluem validações de preenchimento de campos obrigatórios, seleção de opções e transição entre as etapas do formulário.
+The tests include validations for required field completion, option selection, and navigation between form steps.
 
 ---
 
-## Estrutura do Projeto
-Abaixo está a estrutura principal do projeto:
+## Project Structure
+Below is the main structure of the project:
 
 ```plaintext
 .
-├── .github/workflows          # Configuração da pipeline do GitHub Actions
-│   └── playwright_tests.yml   # Pipeline de execução de testes
-├── Pages                      # Page Objects (abstração dos elementos das páginas)
-│   ├── insurantDataPage.cs    # Classe para manipular a aba 'Enter Insurant Data'
-│   ├── vehicleDataPage.cs     # Classe para manipular a aba 'Enter Vehicle Data'
-├── Tests                      # Testes unitários e funcionais
-│   ├── insurantDataTests.cs   # Testes para 'Enter Insurant Data'
-│   ├── vehicleDataTests.cs    # Testes para 'Enter Vehicle Data'
-│   ├── BaseTest.cs            # Classe base para configuração de Playwright
-├── Screenshots/               # Capturas de tela geradas localmente
-├── Config.cs                  # Configuração de variáveis do projeto
-├── selectors.json             # Seletor de elementos das páginas
-├── PlaywrightTest.csproj      # Arquivo de configuração do projeto .NET
-└── .gitignore                 # Arquivo para ignorar arquivos e pastas não versionadas
+├── .github/workflows          # GitHub Actions pipeline configuration
+│   └── playwright_tests.yml   # Test execution pipeline
+├── Pages                      # Page Objects (page element abstraction)
+│   ├── insurantDataPage.cs    # Class to handle the 'Enter Insurant Data' tab
+│   ├── vehicleDataPage.cs     # Class to handle the 'Enter Vehicle Data' tab
+├── Tests                      # Unit and functional tests
+│   ├── insurantDataTests.cs   # Tests for 'Enter Insurant Data'
+│   ├── vehicleDataTests.cs    # Tests for 'Enter Vehicle Data'
+│   ├── BaseTest.cs            # Base class for Playwright setup
+├── Screenshots/               # Locally generated screenshots
+├── Config.cs                  # Project configuration variables
+├── selectors.json             # Page element selectors
+├── PlaywrightTest.csproj      # .NET project configuration file
+└── .gitignore                 # File to ignore untracked files and folders
 ```
 
-## Pré-requisitos
-Certifique-se de ter as ferramentas abaixo instaladas no seu ambiente:
+## Pre-requisites
 
-- [.NET SDK 6.0+](https://dotnet.microsoft.com/download) (recomendado: .NET 9.0)
-- [Node.js](https://nodejs.org/) (necessário para Playwright)
+Make sure you have the following tools installed in your environment:
+
+- [.NET SDK 6.0+](https://dotnet.microsoft.com/download) (recommended: .NET 9.0)
+- [Node.js](https://nodejs.org/) (required for Playwright)
 - [Git](https://git-scm.com/)
 - Uma IDE como [Visual Studio](https://visualstudio.microsoft.com/) ou [Visual Studio Code](https://code.visualstudio.com/)
 
 
-## Passos para Clonar e Rodar o Projeto 
-### 1. Clone o Repositório
+## Steps to Clone and Run the Project
+### 1. Clone the Repository
 ```
 git clone <URL_DO_REPOSITORIO>
 cd PlaywrightTest
 ```
 
-### 2. Restaure as Dependências do .NET
+### 2. Restore .NET Dependencies
 ```
 dotnet restore
 ```
 
-### 3. Instale as Dependências do Playwright
+### 3. Install Playwright Dependencies
 ```
 npx playwright install
 ```
 
-### 4. Configure o Ambiente Local
-* Verifique se o arquivo **Config.cs** contém a URL correta da aplicação (exemplo: https://sampleapp.tricentis.com/101/app.php).
+### 4. Configure the Local Environment
+* Verify that the **Config.cs** file contains the correct application URL (exemplo: https://sampleapp.tricentis.com/101/app.php).
 
-* Certifique-se de que a pasta **Screenshots/** está sendo ignorada pelo Git usando o arquivo **.gitignore**.
+* Ensure that the **Screenshots/** folder is ignored by Git using the **.gitignore** file.
 
-## Rodando os Testes Localmente
-1. Testar Apenas a Aba "Enter Vehicle Data"
+## Running Tests Locally
+1. Run Only the "Enter Vehicle Data" Tests
 ```
 dotnet test --filter "Category=VehicleData"
 ```
 
-2. Testar Apenas a Aba "Enter Insurant Data"
+2. Run Only the "Enter Insurant Data" Tests
 ```
 dotnet test --filter "Category=InsurantData"
 ```
 
-3. Rodar Todos os Testes
+3. Run All Tests
 ```
 dotnet test
 ```
 
-## Captura de Tela
-Durante a execução dos testes, capturas de tela serão geradas automaticamente na pasta **Screenshots/** ao final de cada teste.
+## Screenshots
+During test execution, screenshots are automatically generated in the **Screenshots/** folder at the end of each test.
 
-### **Configuração:**
-* Para habilitar ou desabilitar capturas de tela, ajuste a propriedade **CaptureScreenshots** no arquivo **Config.cs**:
+### **Configuration**
+* To enable or disable screenshots, adjust the **CaptureScreenshots** in the **Config.cs** file:
 
 ```
 public static bool CaptureScreenshots = true;
 ```
 
-## Integração com GitHub Actions
-O projeto já inclui uma pipeline configurada no arquivo:
+## GitHub Actions Integration
+The project already includes a pipeline configured in:
 **.github/workflows/playwright_tests.yml**:
 
-* Passos da pipeline:
-    1. Configuração do ambiente (instalação do .NET e Playwright)
-    2. Restauração e build do projeto.
-    3. Execução de todos os testes.
+* Pipeline Steps:
+    1. Environment setup (installing .NET and Playwright)
+    2. Project restore and build.
+    3. Execution of all tests.
 
-### Executar Localmente:
-Para simular a pipeline localmente, execute o comando:
+### Run Locally:
+To simulate the pipeline locally, run:
 ```
 dotnet test
 ```
 
-## Licença
-Este projeto é protegido por uma licença MIT.
+## License
+This project is licensed under the MIT License.
 
