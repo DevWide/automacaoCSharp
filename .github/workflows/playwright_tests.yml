@@ -2,55 +2,185 @@ name: Playwright Tests
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  schedule:
+    # Execucao noturna (03:00 UTC) para separar "quebrou porque mudei o teste"
+    # de "quebrou porque a aplicacao mudou".
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Navegador a executar'
+        type: choice
+        options: [chromium, firefox, webkit, all]
+        default: chromium
+
+# Um push novo na mesma branch cancela a execucao anterior.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  playwright-tests:
+  build:
+    name: Build
     runs-on: ubuntu-latest
-
+    outputs:
+      browsers: ${{ steps.matrix.outputs.browsers }}
     steps:
-    # 1. Fazer checkout do código
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    # 2. Configurar o .NET SDK
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '9.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    # 3. Configurar a fonte do NuGet
-    - name: Setup NuGet source
-      run: |
-        if [ $(dotnet nuget list source | grep -c "https://api.nuget.org/v3/index.json") -eq 0 ]; then
-          dotnet nuget add source --name nuget.org https://api.nuget.org/v3/index.json
-        else
-          echo "NuGet source 'nuget.org' já está configurada."
-        fi
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
 
-    # 4. Restaurar dependências do projeto
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore
+        run: dotnet restore
 
-    # 5. Instalar Playwright CLI
-    - name: Install Playwright CLI
-      run: |
-        dotnet tool install --global Microsoft.Playwright.CLI
-        echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+      # Portao rapido de compilacao: um erro de build falha aqui em segundos,
+      # antes de a matriz gastar tempo instalando navegadores.
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
 
-    # 6. Build do projeto para gerar dependências
-    - name: Build project
-      run: dotnet build
+      # A matriz e montada aqui, em bash, e nao numa expressao do GitHub:
+      # fromJSON(format(...)) dependeria de avaliacao preguicosa de && / || e
+      # quebraria em push, onde inputs.browser nao existe.
+      - name: Resolve browser matrix
+        id: matrix
+        env:
+          EVENT: ${{ github.event_name }}
+          BROWSER: ${{ inputs.browser }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ] && [ -n "$BROWSER" ] && [ "$BROWSER" != "all" ]; then
+            browsers="[\"$BROWSER\"]"
+          else
+            browsers='["chromium","firefox","webkit"]'
+          fi
+          echo "browsers=$browsers" >> "$GITHUB_OUTPUT"
+          echo "Matriz: $browsers"
 
-    # 7. Instalar navegadores do Playwright
-    - name: Install Playwright browsers
-      run: playwright install
+  test:
+    name: Tests (${{ matrix.browser }})
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    strategy:
+      # Uma falha no WebKit nao deve esconder o resultado do Chromium.
+      fail-fast: false
+      matrix:
+        browser: ${{ fromJSON(needs.build.outputs.browsers) }}
+    steps:
+      - uses: actions/checkout@v4
 
-    # 8. Executar os testes
-    - name: Run Playwright tests
-      run: dotnet test --filter "(Category=VehicleData) | (Category=InsurantData)"
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # Compilar aqui, em vez de baixar o output do job anterior: o build leva
+      # cerca de um segundo com o cache do NuGet quente, enquanto o output carrega
+      # o driver Node do Playwright e passa de 130 MB - transferir isso para cada
+      # navegador da matriz custaria muito mais do que recompilar.
+      - name: Restore and build
+        run: |
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          version=$(grep -oP '(?<=Microsoft\.Playwright" Version=")[^"]+' PlaywrightTest.csproj)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Playwright $version"
+
+      # Os navegadores pesam centenas de MB. A chave inclui a versao do Playwright,
+      # entao o cache invalida sozinho quando o pacote e atualizado.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.browser }}
+
+      - name: Install Playwright browsers
+        run: pwsh bin/Release/net10.0/playwright.ps1 install --with-deps ${{ matrix.browser }}
+
+      - name: Run tests
+        env:
+          CI: 'true'
+          BROWSER: ${{ matrix.browser }}
+          BASE_URL: ${{ vars.BASE_URL || 'https://sampleapp.tricentis.com/101/app.php' }}
+        run: |
+          dotnet test \
+            --configuration Release \
+            --no-build \
+            --logger "trx;LogFileName=${{ matrix.browser }}.trx" \
+            --logger "console;verbosity=normal" \
+            --results-directory TestResults
+
+      # Traces e screenshots sao o que transforma um X vermelho em diagnostico.
+      # Ficam disponiveis mesmo - principalmente - quando os testes falham.
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts-${{ matrix.browser }}
+          path: TestResults/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Publish test report
+        if: always()
+        continue-on-error: true
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test results (${{ matrix.browser }})
+          path: TestResults/*.trx
+          reporter: dotnet-trx
+          fail-on-error: false
+
+  summary:
+    name: Summary
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write job summary
+        run: |
+          {
+            echo "## Playwright Tests"
+            echo ""
+            echo "| Item | Valor |"
+            echo "| --- | --- |"
+            echo "| Resultado | \`${{ needs.test.result }}\` |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| Disparo | \`${{ github.event_name }}\` |"
+            echo ""
+            echo "Traces e screenshots estao nos artefatos desta execucao."
+            echo "Abra o \`.zip\` do trace em <https://trace.playwright.dev> para reproduzir"
+            echo "o teste passo a passo, com DOM, rede e console."
+          } >> "$GITHUB_STEP_SUMMARY"
