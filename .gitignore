@@ -1,4 +1,5 @@
-# Capturas de Tela
+# Artefatos de execucao (traces, screenshots, videos, .trx)
+TestResults/
 Screenshots/
 
 # Build Artifacts
