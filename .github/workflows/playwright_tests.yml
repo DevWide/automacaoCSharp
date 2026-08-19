@@ -135,14 +135,35 @@ jobs:
         timeout-minutes: 10
         run: pwsh bin/Release/net10.0/playwright.ps1 install ${{ matrix.browser }}
 
-      # O apt do runner ja ficou mais de 20 minutos repetindo "Ign:" no mirror do
-      # Azure antes de cair no archive canonico. Uma segunda tentativa resolve o
-      # caso transitorio, e o timeout impede que um travamento consuma o job.
+      # Tres defesas contra a instabilidade do mirror de pacotes do runner, que ja
+      # deixou um job 22 minutos repetindo "Ign:" em azure.archive.ubuntu.com:
+      #
+      #  1. Aponta o apt direto para o archive canonico.
+      #  2. Limita cada tentativa com "timeout", e nao so o passo inteiro - um
+      #     timeout de passo mataria o bloco antes de a segunda tentativa rodar.
+      #  3. O passo e best-effort (continue-on-error). A imagem do runner ja traz
+      #     quase todas as bibliotecas; quem decide de fato e o teste, que falha
+      #     com erro explicito de inicializacao se faltar alguma.
       - name: Install system dependencies
         timeout-minutes: 12
+        continue-on-error: true
         run: |
-          pwsh bin/Release/net10.0/playwright.ps1 install-deps ${{ matrix.browser }} \
-            || pwsh bin/Release/net10.0/playwright.ps1 install-deps ${{ matrix.browser }}
+          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' \
+            /etc/apt/apt-mirrors.txt || true
+
+          for attempt in 1 2; do
+            echo "::group::Tentativa $attempt"
+            if timeout 300 pwsh bin/Release/net10.0/playwright.ps1 \
+                 install-deps ${{ matrix.browser }}; then
+              echo "::endgroup::"
+              echo "Dependencias de sistema instaladas."
+              exit 0
+            fi
+            echo "::endgroup::"
+          done
+
+          echo "::warning::install-deps nao concluiu; seguindo com as bibliotecas ja presentes na imagem do runner."
+          exit 1
 
       - name: Run tests
         env:
