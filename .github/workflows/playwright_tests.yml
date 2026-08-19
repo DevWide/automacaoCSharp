@@ -32,18 +32,19 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       browsers: ${{ steps.matrix.outputs.browsers }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
@@ -78,6 +79,7 @@ jobs:
     name: Tests (${{ matrix.browser }})
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       checks: write
@@ -88,15 +90,15 @@ jobs:
       matrix:
         browser: ${{ fromJSON(needs.build.outputs.browsers) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
@@ -121,13 +123,26 @@ jobs:
       # Os navegadores pesam centenas de MB. A chave inclui a versao do Playwright,
       # entao o cache invalida sozinho quando o pacote e atualizado.
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.browser }}
 
-      - name: Install Playwright browsers
-        run: pwsh bin/Release/net10.0/playwright.ps1 install --with-deps ${{ matrix.browser }}
+      # O download do navegador (CDN do Playwright) e a instalacao de dependencias
+      # de sistema (apt) sao passos separados de proposito: so o segundo depende do
+      # mirror de pacotes do runner, que e a parte instavel.
+      - name: Install Playwright browser
+        timeout-minutes: 10
+        run: pwsh bin/Release/net10.0/playwright.ps1 install ${{ matrix.browser }}
+
+      # O apt do runner ja ficou mais de 20 minutos repetindo "Ign:" no mirror do
+      # Azure antes de cair no archive canonico. Uma segunda tentativa resolve o
+      # caso transitorio, e o timeout impede que um travamento consuma o job.
+      - name: Install system dependencies
+        timeout-minutes: 12
+        run: |
+          pwsh bin/Release/net10.0/playwright.ps1 install-deps ${{ matrix.browser }} \
+            || pwsh bin/Release/net10.0/playwright.ps1 install-deps ${{ matrix.browser }}
 
       - name: Run tests
         env:
@@ -146,7 +161,7 @@ jobs:
       # Ficam disponiveis mesmo - principalmente - quando os testes falham.
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-artifacts-${{ matrix.browser }}
           path: TestResults/
@@ -156,7 +171,7 @@ jobs:
       - name: Publish test report
         if: always()
         continue-on-error: true
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         with:
           name: Test results (${{ matrix.browser }})
           path: TestResults/*.trx
@@ -168,6 +183,7 @@ jobs:
     needs: test
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Write job summary
         run: |
